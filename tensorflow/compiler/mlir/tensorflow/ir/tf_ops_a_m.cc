@@ -1672,9 +1672,9 @@ static LogicalResult inferConvReturnTypes(
     for (auto i : llvm::seq<int>(0, num_spatial_dims)) {
       const int64_t dim = GetTensorSpatialDimIndex(num_dims, format, i);
       int64_t stride = get_int(strides[dim]);
-      tensorflow::int64 expected_output_size;
-      tensorflow::int64 pad_low;
-      tensorflow::int64 pad_high;
+      int64_t expected_output_size;
+      int64_t pad_low;
+      int64_t pad_high;
       // Retrieve padding, if defined explicitly.
       if (padding == tensorflow::Padding::EXPLICIT) {
         pad_low = get_int(explicit_padding[2 * dim]);
@@ -2219,6 +2219,24 @@ Type InferExpandDimsOpType(Value input, Value dim) {
 void ExpandDimsOp::build(OpBuilder &builder, OperationState &result,
                          Value input, Value dim) {
   return build(builder, result, InferExpandDimsOpType(input, dim), input, dim);
+}
+
+//===----------------------------------------------------------------------===//
+// Expm1Op
+//===----------------------------------------------------------------------===//
+LogicalResult Expm1Op::inferReturnTypes(
+    MLIRContext *context, Optional<Location> location, ValueRange operands,
+    DictionaryAttr attributes, RegionRange regions,
+    SmallVectorImpl<Type> &inferredReturnTypes) {
+  if (operands.empty()) {
+    return emitOptionalError(location, "requires at least one operand.");
+  }
+  auto input_ty = operands[0].getType().dyn_cast<TensorType>();
+  if (!input_ty) {
+    return emitOptionalError(location, "requires input to be of Tensor type");
+  }
+  inferredReturnTypes.assign({input_ty});
+  return success();
 }
 
 //===----------------------------------------------------------------------===//
